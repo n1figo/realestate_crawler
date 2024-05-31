@@ -35,6 +35,9 @@ while True:
     print(f"페이지 {page} 크롤링 완료!")
     page += 1
 
+    if page == 5:
+        break
+
 # "output" 폴더 안에 CSV 파일로 저장
 all_data.to_csv('output/naver_land_combined_data.csv', index=False, encoding='cp949')
 print("CSV 파일 저장 완료!")
