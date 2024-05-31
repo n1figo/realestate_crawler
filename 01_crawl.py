@@ -15,7 +15,8 @@ def crawl_real_estate(url):
     chrome_options.add_argument("--disable-dev-shm-usage")
     
     # ChromeDriver 설치 및 실행
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    chrome_version = "125.0.6422.113"  # 최신 크롬 버전을 수동으로 지정
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager(version=chrome_version).install()), options=chrome_options)
     driver.get(url)
     
     # 페이지가 로드될 때까지 잠시 대기
