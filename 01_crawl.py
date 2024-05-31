@@ -1,39 +1,47 @@
-import requests
-from bs4 import BeautifulSoup
+import time
 import pandas as pd
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
 
 def crawl_real_estate(url):
     print(f"Fetching URL: {url}")
-    # 요청을 보내고 HTML 내용을 가져옵니다.
-    response = requests.get(url)
-    if response.status_code != 200:
-        print(f"Failed to fetch the URL: {response.status_code}")
-        return []
-
-    print("Parsing HTML content")
-    soup = BeautifulSoup(response.content, 'html.parser')
-
+    # Chrome options 설정
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Headless 모드
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    
+    # ChromeDriver 설치 및 실행
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+    driver.get(url)
+    
+    # 페이지가 로드될 때까지 잠시 대기
+    time.sleep(5)
+    
     # 매물 정보를 저장할 리스트
     property_list = []
 
     # 매물 리스트를 찾습니다.
-    items = soup.select('.item_inner')
+    items = driver.find_elements(By.CSS_SELECTOR, '.item_inner')
     print(f"Found {len(items)} items")
 
     for idx, item in enumerate(items):
         try:
             print(f"Processing item {idx + 1}")
-            title = item.select_one('.item_title .text').get_text(strip=True)
-            price = item.select_one('.price_line .price').get_text(strip=True)
-            info_areas = item.select('.info_area .line .spec')
+            title = item.find_element(By.CSS_SELECTOR, '.item_title .text').text.strip()
+            price = item.find_element(By.CSS_SELECTOR, '.price_line .price').text.strip()
+            info_areas = item.find_elements(By.CSS_SELECTOR, '.info_area .line .spec')
 
-            info_area_1 = info_areas[0].get_text(strip=True) if len(info_areas) > 0 else ''
-            info_area_2 = info_areas[1].get_text(strip=True) if len(info_areas) > 1 else ''
+            info_area_1 = info_areas[0].text.strip() if len(info_areas) > 0 else ''
+            info_area_2 = info_areas[1].text.strip() if len(info_areas) > 1 else ''
 
-            agent_info_1 = item.select('.cp_area .agent_name')[0].get_text(strip=True) if len(item.select('.cp_area .agent_name')) > 0 else ''
-            agent_info_2 = item.select('.cp_area .agent_name')[1].get_text(strip=True) if len(item.select('.cp_area .agent_name')) > 1 else ''
+            agent_info_1 = item.find_elements(By.CSS_SELECTOR, '.cp_area .agent_name')[0].text.strip() if len(item.find_elements(By.CSS_SELECTOR, '.cp_area .agent_name')) > 0 else ''
+            agent_info_2 = item.find_elements(By.CSS_SELECTOR, '.cp_area .agent_name')[1].text.strip() if len(item.find_elements(By.CSS_SELECTOR, '.cp_area .agent_name')) > 1 else ''
 
-            tag = item.select_one('.tag_area .tag').get_text(strip=True) if item.select_one('.tag_area .tag') else ''
+            tag = item.find_element(By.CSS_SELECTOR, '.tag_area .tag').text.strip() if item.find_elements(By.CSS_SELECTOR, '.tag_area .tag') else ''
 
             property_list.append({
                 'Title': title,
@@ -48,6 +56,7 @@ def crawl_real_estate(url):
         except Exception as e:
             print(f"Error processing item {idx + 1}: {e}")
 
+    driver.quit()
     return property_list
 
 def save_to_excel(data, filename):
